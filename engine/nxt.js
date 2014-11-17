@@ -99,13 +99,12 @@ function Engine(eventRanker) {
       if (currentEvent.timestamp > duration) break;
       data = currentEvent.func(scheduler, currentEvent.params);
 
-      
-      if (currentEvent.parent) {
+      if (currentEvent.parent.name == "Run") {
+        console.log(currentEvent.name + ' ' + currentEvent._id + ' by Run 0');
+      } else if (currentEvent.parent) {
         console.log(currentEvent.name + ' ' + currentEvent._id + ' by ' + currentEvent.parent.name
          + ' ' + currentEvent.parent._id + ' at time '
         + scheduler.getClock());
-      } else {
-        console.log(currentEvent.name + ' ' + currentEvent._id + ' by Run 0');
       }
     }
   }
