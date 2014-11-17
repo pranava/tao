@@ -1,0 +1,204 @@
+html {
+  height: 100%;
+}
+
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  background-image: url(images/appvis-bg.png);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', helvetica, san-serif;
+}
+
+input {
+  font-family: 'Roboto', helvetica, san-serif;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.hidden {
+  /*display: none !important;*/
+}
+
+#stage {
+  display: block;
+  height: 100%;
+  width: calc(100% - 75px);
+  overflow: hidden;
+  float: left;
+}
+
+#sidebar {
+  display: block;
+  float: right;
+  height: 100%;
+  background-color: rgb(98, 125, 137);
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 999;
+  opacity: 0.9;
+}
+
+#menu {
+  display: block;
+  list-style: none;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  width: 75px;
+  height: 100%;
+  float: right;
+  background-color: rgb(98, 125, 137);
+}
+
+#menu li {
+  color: #ffffff;
+  height: 60px;
+  padding: 20px 0 7px 0;
+  text-align: center;
+}
+
+#menu li:hover {
+  background-color: rgb(214, 220, 223);
+  color: rgb(98, 125, 137);
+}
+
+#menu li span {
+  font-size: 12px;
+  display: inline-block;
+  padding-bottom: 6px;
+}
+
+#menu li span.icon {
+  font-size: 16px;
+}
+
+#contents {
+  display: block;
+  height: 100%;
+  width: 400px;
+  float: left;
+  background-color: rgb(214, 220, 223);
+}
+
+.editor {
+  color: rgb(98, 125, 137);
+  padding: 15px;
+  height: calc(100% - 66px - 30px);
+  overflow: scroll;
+}
+
+.editor::-webkit-scrollbar { 
+  display: none; 
+}
+
+.editor span.title {
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
+  display: block;
+  padding: 0 0 10px 0;
+}
+
+.editor span.instructions {
+  font-size: 12px;
+  color: inherit;
+  display: block;
+  padding: 10px 0 10px 0;
+}
+
+.editor input {
+  font-size: 14px;
+  background-color: rgb(241, 242, 243);
+  color: inherit;
+  width: calc(100% - 30px);
+  padding: 5px 15px;
+  height: 30px;
+  border: 0;
+}
+
+.editor .code-editor {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
+
+
+.editor ul {
+  display: block;
+  list-style: none;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+}
+
+.editor .edgeParams {
+  background-color: rgb(228, 231, 232);
+  padding: 5px 15px;
+  height: 90px;
+  line-height: 30px;
+  margin-bottom: 2px;
+}
+
+.editor .variables {
+  background-color: rgb(228, 231, 232);
+  padding: 5px 15px;
+  height: 90px;
+  line-height: 30px;
+  margin-bottom: 2px;
+}
+
+.editor ul li {
+  background-color: rgb(228, 231, 232);
+  padding: 5px 15px;
+  height: 30px;
+  line-height: 30px;
+  margin-bottom: 2px;
+}
+
+.footer {
+  width: calc(100% - 30px);
+  height: 35px;
+  background-color: rgb(228, 231, 232);
+  border-top: 1px solid rgba(98, 125, 137, 0.5);
+  display: block;
+  padding: 15px;
+}
+
+.footer .action-button {
+  text-decoration: none;
+  display: inline-block;
+  
+  padding: 8px;
+  margin-left: 10px;
+  border: 1px solid rgb(98, 125, 137);
+  border-radius: 2px;
+  
+  color: rgb(98, 125, 137);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.footer .action-button.green {
+  color: rgb(22, 150, 136);
+  border-color: rgb(22, 150, 136);;
+}
+
+.code {
+  font-size: 14px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  color: inherit;
+}
+
+.right {
+  float: right;
+}

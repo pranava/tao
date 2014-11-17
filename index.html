@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Tao</title>
+    <script src="lib/jquery-2.1.1.min.js"></script>
+    <script src="lib/ace.js"></script>
+    <script src="lib/handlebars-v1.3.0.js"></script>
+    <script src="lib/underscore.js"></script>
+    <script src="lib/FileSaver.js"></script>
+
+    <script src="engine/alea.js"></script>
+    <script src="engine/heap.js"></script>
+    <script src="engine/nxt.js"></script>
+    <script src="engine/simulation.js"></script>
+    <script src="engine/SigmaGenerator.js"></script>
+
+    <script src="models.js"></script>
+    <script src="erg.js"></script>
+    <script src="editor.js"></script>
+
+    <link href='http://fonts.googleapis.com/css?family=Roboto:400,500,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="tao.css" type="text/css" media="screen">
+    <link rel="stylesheet" href="diagram.css" type="text/css" media="screen">
+  </head>
+  <body>
+    <div id="stage">
+    </div>
+    <div id="sidebar">
+      <div id="contents" style="display: none;">
+        <div class="editor">
+          <div id="node-editor" style="display: none;">
+            <span class="title">NAME</span>
+            <input type="text" data-templateId="eventName"/>
+            <br /><br />
+            <span class="title">STATE CHANGE</span>
+            <div class="code-editor" data-templateId="stateChange"></div>
+            <br /><br />
+            <span class="title">PARAMETERS</span>
+            <ul data-templateId="parameters"></ul>
+            <span class="instructions">To add a parameter, enter a name for the parameter below and hit enter to add it to the list.</span>
+            <input class="code variableNameInput" type="text"/>
+          </div>
+
+          <div id="edge-editor" style="display: none;">
+            <span class="title">SOURCE</span>
+            <input type="text" disabled data-templateId="sourceName" value="Run"/>
+            <br /><br />
+
+            <span class="title">TARGET</span>
+            <input type="text" disabled data-templateId="targetName" value="Enter"/>
+            <br /><br />
+
+            <span class="title">CONDITION</span>
+            <div class="code-editor" style="height: 50px;" data-templateId="condition">(true)</div>
+            <br /><br />
+
+            <span class="title">DELAY</span>
+            <input type="text" data-templateId="delay"/>
+            <br /><br />
+
+            <span class="title">PRIORITY</span>
+            <input type="text" data-templateId="priority"/>
+            <br /><br />
+
+            <span class="title">PARAMETERS</span>
+            <ul data-templateId="parameters"></ul>
+          </div>
+
+          <div id="variable-editor" style="display: none;">
+            <span class="title">SIMULATION NAME</span>
+            <input type="text" id="simulationName"/>
+            <br /><br />
+            <span class="title">TIME UNITS</span>
+            <input type="text" id="timeUnits"/>
+            <br /><br />
+            <span class="title">GLOBAL VARIABLES</span>
+            <ul data-templateId="globalVariables"></ul>
+            <span class="instructions">To add a global variable, enter a name for the variable below and hit enter to add it to the list.</span>
+            <input class="code globalVariableNameInput" type="text"/>
+            <br /><br />
+          </div>
+        </div>
+        <div class="footer">
+        </div>
+      </div>
+
+      <ul id="menu">
+        <li id="run">
+          <a href="#">
+            <span class="icon">►</span>
+            <br />
+            <span>RUN</span>
+          </a>
+        </li>
+        <li id="globals">
+          <a href="#">
+            <span class="icon"><strong>{&nbsp;}</strong></span>
+            <br />
+            <span>GLOBALS</span>
+          </a>
+        </li>
+        <li id="open">
+          <a href="#">
+            <span class="icon"><strong>↑</strong></span>
+            <br />
+            <span>OPEN</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+<input id="file_input" style="display: none;" type="file"></input>
+ <script id="erg" type="text/x-handlebars-template">
+function {{name}} (
+  {{~#variableEach variables}}{{name}}{{^last}},{{/last}} {{/variableEach}}
+  ) {
+  var self = this;
+  var globals = this;
+  console.log('Running: {{name}}');
+
+  {{! variables}}
+  {{~#each variables}}
+  globals.{{name}} = {{name}};
+  {{~/each}}
+  {{! functions}}
+
+ 
+
+  {{#each events}}
+  self.{{name}} = function(scheduler, params) {
+    this.name = "{{name}}";
+
+    {{{stateChange}}}
+    {{#getEdges ../edges name}}
+    if ({{{condition}}}) {
+      scheduler.schedule("{{../name}}", this, {{delay}}, {{priority}}, self.{{#getEvent ../../events target}}{{name}}{{/getEvent}}, {{#parameters parameters}}{{{params}}}{{/parameters}});
+    }
+    {{/getEdges}}
+    return this.name;
+  }
+  {{/each}}
+}
+    </script>
+
+    <script id="modFile" type="text/x-handlebars-template">
+
+          MODEL DEFAULTS
+          --------------
+
+Model Name:         {{name}}.MOD
+Model Description:  
+Output File:        UNTITLED.OUT
+Output Plot Style:  NOAUTO_FIT
+Run Mode:           SINGLE_STEP
+Trace Vars:         {{#each_variable_with_commas variables}}{{variables}}{{/each_variable_with_commas}}
+Random Number Seed: 12345
+Initial Values:     {{#initialValues}}{{initialVals}}{{/initialValues}}
+Ending Condition:   STOP_ON_TIME
+Ending Time:        {{#time}}{{timeUnits}}{{/time}}
+Trace Events:       ALL EVENTS TRACED
+Hide Edges:
+
+
+          STATE VARIABLES
+          ---------------
+      {{~#each_with_index variables}}
+
+      State Variable #{{index}}
+
+Name:        {{#toUpper name}}{{upper}}{{/toUpper}}
+Description: {{#toUpper description}}{{upper}}{{/toUpper}}
+Type:        INTEGER
+Size:        1
+
+      {{~/each_with_index}}
+
+
+          VERTICES
+          --------
+      {{~#each_with_index events}}
+
+      Vertex #{{index}}
+
+Name:                 {{#toUpper name}}{{upper}}{{/toUpper}}
+Description: 
+State Changes:        {{#javascriptToCEvents stateChange}}{{cString}}{{/javascriptToCEvents}}
+{{!modFileParameters}}Parameter(s):        {{#modFileParameters parameters name ../variables}}{{params}}{{/modFileParameters}}
+Bitmap (Inactive):
+Bitmap (Active):
+Use Flowchart Shapes: 0
+Use Opaque Bitmaps:   0
+Location:             {{#locationHelper x y}}X: {{newX}};   Y: {{newY}};   Z: 0.00;{{/locationHelper}}
+Local Trace:
+Trace Location:
+
+      {{~/each_with_index}}
+
+          EDGES
+          -----
+{{#super_each edges events}}
+      {{#each_with_index toReturn.graphicalEdges}}
+      Graphics Edge #{{index}}
+  {{#each sub_edges}}
+  Sub-Edge #{{id}}
+Description:
+Type:            Scheduling
+Origin:          {{#toUpper source}}{{upper}}{{/toUpper}}
+Destination:     {{#toUpper target}}{{upper}}{{/toUpper}}
+Condition:       {{#javascriptToCEdges condition}}{{{cString}}}{{/javascriptToCEdges}}
+Delay:           {{delay}}
+Priority:        {{priority}}
+Attributes:      
+  {{/each}}
+      {{/each_with_index}}
+{{/super_each}}
+
+    </script>
+
+    <script src="diagram.js"></script>
+  </body>
+</html>
