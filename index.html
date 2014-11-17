@@ -133,7 +133,7 @@ function {{name}} (
     {{{stateChange}}}
     {{#getEdges ../edges name}}
     if ({{{condition}}}) {
-      scheduler.schedule("{{../name}}", this, {{delay}}, {{priority}}, self.{{#getEvent ../../events target}}{{name}}{{/getEvent}}, {{#parameters parameters}}{{{params}}}{{/parameters}});
+      scheduler.schedule("{{#getEvent ../../events target}}{{name}}{{/getEvent}}", this, {{delay}}, {{priority}}, self.{{#getEvent ../../events target}}{{name}}{{/getEvent}}, {{#parameters parameters}}{{{params}}}{{/parameters}});
     }
     {{/getEdges}}
     return this.name;

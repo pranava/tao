@@ -3,26 +3,25 @@ function SimulationGenerator(result) {
   this.sim = "";
 }
 
-function stringify(parameters) {
-  var toReturn = "{";
-  for (var key in parameters) {
-    toReturn += key;
-    toReturn += ": ";
-    toReturn += parameters[key];
-    toReturn += ",";
-  }
-
-
-  if (toReturn.charAt(toReturn.length - 1) == ",") {
-    toReturn = toReturn.substr(0, toReturn.length - 1);
-  }
-
-  toReturn += "}";
-  return toReturn;
-}
-
 SimulationGenerator.prototype.renderSimulation = function () {
 
+  function stringify(parameters) {
+    var toReturn = "{";
+    for (var key in parameters) {
+      toReturn += key;
+      toReturn += ": ";
+      toReturn += parameters[key];
+      toReturn += ",";
+    }
+
+
+    if (toReturn.charAt(toReturn.length - 1) == ",") {
+      toReturn = toReturn.substr(0, toReturn.length - 1);
+    }
+
+    toReturn += "}";
+    return toReturn;
+  }
 
   Handlebars.registerHelper('parameters', function(parameters, options) {
     if (parameters) {
@@ -84,7 +83,6 @@ SimulationGenerator.prototype.renderSimulation = function () {
   rendered = partial1 + partial2;
   this.sim = rendered;
 
-  console.log(rendered);  
   return rendered;
 }
 
