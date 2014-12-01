@@ -113,6 +113,7 @@
     
     this.parameters = opts.parameters;
     this.stateChange = opts.stateChange;
+    this.trace = opts.trace;
     this.jsonX = opts.jsonX;
     this.jsonY = opts.jsonY;
 
@@ -223,6 +224,8 @@
    * Remove dragging events when mouse up.
    */
   Node.prototype.onDragEnd = function(e) {
+    this.jsonX = e.pageX;
+    this.jsonY = e.pageY;
     this.el.removeClass('dragging');
     $(window).off('mousemove');
   };

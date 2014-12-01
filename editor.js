@@ -11,6 +11,7 @@
 
     this.eventNameInput = this.queryByTemplateId('eventName');
     this.stateChangeDiv = this.queryByTemplateId('stateChange');
+    this.eventTrace = this.queryByTemplateId('traceEvent');
     this.parametersUl = this.queryByTemplateId('parameters');
 
     this.variableNameInput.on('keyup', this.addParameterCallback(this));
@@ -29,15 +30,15 @@
   EventPanel.prototype.buildActions = function() {
     var container = $('<div></div>').addClass('right');
     var updateAction = $('<a></a>')
-        .attr('href', '#')
-        .addClass('action-button')
-        .addClass('green')
-        .text('Update');
+      .attr('href', '#')
+      .addClass('action-button')
+      .addClass('green')
+      .text('Update');
 
     var discardAction = $('<a></a>')
-        .attr('href', '#')
-        .addClass('action-button')
-        .text('Revert');
+      .attr('href', '#')
+      .addClass('action-button')
+      .text('Revert');
 
     updateAction.on('click', this.update(this));
     discardAction.on('click', this.revert(this));
@@ -53,6 +54,13 @@
     this.footerDiv.append(this.buildActions());
 
     this.eventNameInput.val(node.title);
+
+    if (eval(node.trace)) {
+      this.eventTrace.prop('checked', true);
+    } else {
+      this.eventTrace.prop('checked', false);
+    }
+
     this.codeEditor.getSession().setValue(node.stateChange);
     this.currentNode = node;
 
@@ -116,6 +124,7 @@
   EventPanel.prototype.update = function(panel) {
     return (function() {
       var newName = panel.eventNameInput.val();
+      var newTrace = panel.eventTrace.is(':checked');
       var newStateChange = panel.codeEditor.getSession().getValue();
       var newParameters = {};
 
@@ -125,7 +134,9 @@
         newParameters[varNameEl.text()] = null;
       }
 
+
       panel.currentNode.setTitle(newName);
+      panel.currentNode.trace = newTrace.toString();
       panel.currentNode.stateChange = newStateChange;
       panel.currentNode.parameters = newParameters;
     });
@@ -151,11 +162,13 @@
     this.priority = this.queryByTemplateId('priority');
     this.conditionDiv = this.queryByTemplateId('condition');
     this.parametersUl = this.queryByTemplateId('parameters');
+    this.multipleEdgeSelectorUl = this.queryByTemplateId('multipleEdgeSelector');
 
     this.codeEditor = ace.edit(this.conditionDiv[0]);
     this.codeEditor.setTheme("ace/theme/tomorrow");
     this.codeEditor.getSession().setMode("ace/mode/javascript");
 
+    this.erg = null;
     this.currentEdge = null;
   }
 
@@ -166,28 +179,78 @@
   EdgePanel.prototype.buildActions = function() {
     var container = $('<div></div>').addClass('right');
     var updateAction = $('<a></a>')
-        .attr('href', '#')
-        .addClass('action-button')
-        .addClass('green')
-        .text('Update');
+      .attr('href', '#')
+      .addClass('action-button')
+      .addClass('green')
+      .text('Update');
 
     var discardAction = $('<a></a>')
-        .attr('href', '#')
-        .addClass('action-button')
-        .text('Revert');
-    
+      .attr('href', '#')
+      .addClass('action-button')
+      .text('Revert');
+
+    var deleteAction = $('<a></a>')
+      .attr('href', '#')
+      .addClass('action-button')
+      .text('Delete');
+
     updateAction.on('click', this.update(this));
     discardAction.on('click', this.revert(this));
+    deleteAction.on('click', this.delete(this));
 
     container
+      .append(deleteAction)
       .append(discardAction)
       .append(updateAction);
     return container;
   }
+  
+  EdgePanel.prototype.delete = function(panel) {
+    return (
+      function() {
+        panel.erg.deleteSelected();
+        $('#contents').hide();
+      });
+  }
 
-  EdgePanel.prototype.load = function(edge) {
+  EdgePanel.prototype.loadMultipleEdges = function(edges, erg) {
     this.clear();
     this.footerDiv.append(this.buildActions());
+    this.erg = erg;
+    // this.currentEdge = edges;
+    if (edges.length < 2) {
+      $('.multiple-edge-action').hide();
+      $('#edgeListDisplay').hide();
+      this.load(edges[0]);
+    } else {
+      $('#edgeListDisplay').show();
+      this.load(edges[0]);
+      var i = 0;
+      for (var edge in edges) {
+        i++;
+        var container = $('<li></li>').addClass('edgeDropDown');
+        var nameSpan = $('<a></a>')
+          .attr('href', '#')
+          .addClass('action-button')
+          .addClass('green')
+          .text('Edge ' + i);
+        container.append(nameSpan);
+        this.multipleEdgeSelectorUl.append(container);
+        nameSpan.on('click', this.returnLoad(edges[edge]));
+      }
+    }
+  }
+
+  EdgePanel.prototype.returnLoad = function(edge) {
+    var self = this;
+    return (function() {
+      self.load(edge);
+    });
+  }
+
+  EdgePanel.prototype.load = function(edge) {
+    // this.clear();
+    // this.footerDiv.append(this.buildActions());
 
     this.sourceNameInput.val(edge.origin.title);
     this.targetNameInput.val(edge.destination.title);
@@ -195,10 +258,10 @@
     this.priority.val(edge.priority);
     this.codeEditor.getSession().setValue(edge.condition);
     this.currentEdge = edge;
-
+    this.erg.selectedPartical = edge;
 
     this.parametersUl.empty();
-    
+
 
     for (var key in this.currentEdge.destination.parameters) {
       if (this.currentEdge.destination.parameters.hasOwnProperty(key)) {
@@ -231,6 +294,7 @@
     this.targetNameInput.val('');
     this.codeEditor.getSession().setValue('');
     this.parametersUl.empty();
+    this.multipleEdgeSelectorUl.empty();
 
     this.currentEdge = null;
   }
@@ -271,12 +335,12 @@
     this.editorDiv = $(editorDiv);
     this.footerDiv = $(footerDiv);
     this.editor = $('#variable-editor', this.editorDiv);
- 
+
     this.variableNameInput = $('.globalVariableNameInput');
 
     this.timeUnitsInput = this.queryByTemplateId('timeUnits');
     this.globalVariablesUl = this.queryByTemplateId('globalVariables');
-    
+
     this.variableNameInput.on('keyup', this.addGlobalVariableCallback(this));
 
     this.erg = null;
@@ -325,17 +389,17 @@
     var container = $('<div></div>').addClass('right');
 
     var downloadSigmaCode = $('<a></a>')
-        .attr('href', '#')
-        .addClass('action-button')
-        .addClass('green')
-        .text('Download Sigma File');
+      .attr('href', '#')
+      .addClass('action-button')
+      .addClass('green')
+      .text('Download Sigma File');
 
     var downloadTaoCode = $('<a></a>')
-        .attr('href', '#')
-        .addClass('action-button')
-        .addClass('green')
-        .text('Download Tao File');
-    
+      .attr('href', '#')
+      .addClass('action-button')
+      .addClass('green')
+      .text('Download Tao File');
+
     downloadSigmaCode.on('click', this.sigma(this));
 
     downloadTaoCode.on('click', this.tao(this));
@@ -349,7 +413,9 @@
   GlobalPanel.prototype.sigma = function(panel) {
     return (function(e) {
       var sigmaGenerator = new SigmaGenerator(panel.erg.getJSON());
-      var blob = new Blob([sigmaGenerator.template()], {type : 'text/html'});
+      var blob = new Blob([sigmaGenerator.template()], {
+        type: 'text/html'
+      });
       var name = panel.erg.getJSON().name + '.mod';
       saveAs(blob, name);
     });
@@ -358,7 +424,9 @@
   GlobalPanel.prototype.tao = function(panel) {
     return (function(e) {
       var json = panel.erg.getJSON();
-      var blob = new Blob([JSON.stringify(json)], {type : 'text/html'});
+      var blob = new Blob([JSON.stringify(json)], {
+        type: 'text/html'
+      });
       var name = json.name + '.txt';
       saveAs(blob, name);
     });

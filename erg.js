@@ -16,15 +16,18 @@
     this.eventSelect = eventSelect;
     this.edgeSelect = edgeSelect;
 
-    this.run = this.createEvent(75, 75, '', 'Run', {}, 'green');
+    this.run = this.createEvent(75, 75, '', 'Run', {}, 'green', 'true');
 
     this.edgeSource = null;
     this.selectedPartical = null;
   }
 
-  EventRelationGraph.prototype.createEvent = function(x, y, stateChange, title, parameters, themeName) {
+  EventRelationGraph.prototype.createEvent = function(x, y, stateChange, title, parameters, themeName, trace) {
     title = title || 'Event' + this.events.length;
     parameters = parameters || {};
+    if (trace != "false") {
+      trace = "true";
+    }
 
     var edgeX = x - (NODE_DIMENSIONS.w / 2);
     var edgeY = y - (NODE_DIMENSIONS.h / 2);
@@ -41,6 +44,7 @@
       y: edgeY,
       jsonX: x,
       jsonY: y,
+      trace: trace,
       parameters: parameters,
       defaultTheme: defaultTheme,
       events: {
@@ -56,11 +60,15 @@
   EventRelationGraph.prototype.deleteSelected = function() {
 
     var edgesLeadingToNode = [];
+    if (this.selectedPartical.title == "Run") {
+      alert('You cannot delete the Run node!');
+      return false;
+    }
 
     //find all edges leading to or away from selected node (if node)
     for (var edge in this.edges) {
       if (_.isEqual(this.edges[edge].destination, this.selectedPartical) ||
-          _.isEqual(this.edges[edge].origin, this.selectedPartical)) {
+        _.isEqual(this.edges[edge].origin, this.selectedPartical)) {
         edgesLeadingToNode.push(edge);
       }
     }
@@ -83,9 +91,9 @@
     for (var index in edgesLeadingToNode) {
       delete this.edges[edgesLeadingToNode[index]];
     }
-    console.log('being called')
     this.selectedPartical.remove();
     this.clearContext();
+    return true;
   }
 
   EventRelationGraph.prototype.createEdge = function(source, target, delay, condition, priority, parameters) {
@@ -138,11 +146,22 @@
     return edge;
   }
 
+  EventRelationGraph.prototype.getEdgeByNodes = function(source, target) {
+    var returnEdges = [];
+    for (var edge in this.edges) {
+      if (this.edges[edge].origin.title == source && this.edges[edge].destination.title == target) {
+        returnEdges.push(this.edges[edge]);
+      }
+    }
+
+    return returnEdges;
+  }
+
   EventRelationGraph.prototype.clearContext = function() {
     var nodesToRevert = [this.edgeSource, this.selectedPartical];
     for (var i = 0; i < nodesToRevert.length; i++) {
       if (nodesToRevert[i]) {
-        nodesToRevert[i].setTheme(nodesToRevert[i].defaultTheme);  
+        nodesToRevert[i].setTheme(nodesToRevert[i].defaultTheme);
       }
     }
 
@@ -201,6 +220,7 @@
   EventRelationGraph.prototype.getJSON = function(erg) {
     var json = {};
     json.name = $('#simulationName').val();
+    json.description = $('#simulationDescription').val();
     json.variables = [];
     json.edges = [];
     json.events = [];
@@ -228,6 +248,7 @@
       json.events.push({
         'name': this.events[event].title,
         'stateChange': this.events[event].stateChange,
+        'trace': this.events[event].trace,
         'x': this.events[event].jsonX,
         'y': this.events[event].jsonY,
         'parameters': this.events[event].parameters
