@@ -33,6 +33,11 @@
             <span class="title">NAME</span>
             <input type="text" data-templateId="eventName"/>
             <br /><br />
+            <span class="title">Trace</span>
+            <span style="display: inline-block" class="instructions">To trace an event, check the box:</span>
+            <input style="display: inline-block" type="checkbox" data-templateId="traceEvent" id="traceEvent"checked>
+            <br /><br />
+
             <span class="title">STATE CHANGE</span>
             <div class="code-editor" data-templateId="stateChange"></div>
             <br /><br />
@@ -51,6 +56,10 @@
             <input type="text" disabled data-templateId="targetName" value="Enter"/>
             <br /><br />
 
+            <span class="title" style="display: none;" id="edgeListDisplay">Edges</span>
+            <ul data-templateId="multipleEdgeSelector" id="multipleEdgeList"></ul>
+            <br />
+
             <span class="title">CONDITION</span>
             <div class="code-editor" style="height: 50px;" data-templateId="condition">(true)</div>
             <br /><br />
@@ -64,12 +73,16 @@
             <br /><br />
 
             <span class="title">PARAMETERS</span>
+            
             <ul data-templateId="parameters"></ul>
           </div>
 
           <div id="variable-editor" style="display: none;">
             <span class="title">SIMULATION NAME</span>
             <input type="text" id="simulationName"/>
+            <br /><br />
+            <span class="title">DESCRIPTION</span>
+            <textarea type="text" id="simulationDescription"></textarea>
             <br /><br />
             <span class="title">TIME UNITS</span>
             <input type="text" id="timeUnits"/>
@@ -133,7 +146,7 @@ function {{name}} (
     {{{stateChange}}}
     {{#getEdges ../edges name}}
     if ({{{condition}}}) {
-      scheduler.schedule("{{#getEvent ../../events target}}{{name}}{{/getEvent}}", this, {{delay}}, {{priority}}, self.{{#getEvent ../../events target}}{{name}}{{/getEvent}}, {{#parameters parameters}}{{{params}}}{{/parameters}});
+      scheduler.schedule("{{#getEvent ../../events target}}{{name}}{{/getEvent}}", this, {{delay}}, {{priority}}, self.{{#getEvent ../../events target}}{{name}}{{/getEvent}}, {{#parameters parameters}}{{{params}}}{{/parameters}}, {{#getEvent ../../events target}}{{trace}}{{/getEvent}});
     }
     {{/getEdges}}
     return this.name;
@@ -148,7 +161,7 @@ function {{name}} (
           --------------
 
 Model Name:         {{name}}.MOD
-Model Description:  
+Model Description:  {{description}}
 Output File:        UNTITLED.OUT
 Output Plot Style:  NOAUTO_FIT
 Run Mode:           SINGLE_STEP

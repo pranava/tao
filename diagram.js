@@ -72,8 +72,9 @@
         (e.target == this) &&
         (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == 190)) {
 
-        contents.hide();
-        erg.deleteSelected();
+        if (erg.deleteSelected()) {
+          contents.hide();  
+        }
       }
     });
 
@@ -88,13 +89,18 @@
           var reader = new FileReader();
 
           reader.onload = function(e) {
-            // console.log(reader.result);
             var json = eval('(' + reader.result + ')');
             erg.deleteAll();
             globalPanel.globalVariablesUl.empty();
 
             //load name
             $('#simulationName').val(json.name);
+
+            //put in a time so that a poor user won't have to encounter infinite loops
+            $('#timeUnits').val('0');
+
+            //get the user instructions for the simulation and alert it
+            $('#simulationDescription').val(json.description);
 
             //load variables
             for (var variable in json.variables) {
@@ -113,13 +119,14 @@
 
             //load events
             for (event in json.events) {
-              // this.createEdge(this.events[0], this.events[1], 0, 'true', 0, {});
               var e = json.events[event];
               var color = 'blue';
+              var trace = e.trace || "true";
+
               if (e.name == "Run") {
                 color = 'green';
               }
-              erg.createEvent(e.x, e.y, e.stateChange, e.name, e.parameters, color);
+              erg.createEvent(e.x, e.y, e.stateChange, e.name, e.parameters, color, trace);
             }
 
             //load edges
@@ -130,7 +137,7 @@
 
           }
 
-          //asynchronous, set call back above for execution onload.
+          //asynchronous, set call back above for execution onload
           reader.readAsText(file);
         } else {
           alert('Please upload a text file.');
@@ -148,7 +155,8 @@
 
   function edgeSelected(edge) {
     clearContent();
-    edgePanel.load(edge);
+    edgePanel.loadMultipleEdges(erg.getEdgeByNodes(edge.origin.title, edge.destination.title), erg);
+    // edgePanel.load(edge);
     contents.show();
   }
 

@@ -82,7 +82,7 @@ SimulationGenerator.prototype.renderSimulation = function () {
   var partial2 = rendered.substring(rendered.indexOf(')'));
   rendered = partial1 + partial2;
   this.sim = rendered;
-
+  
   return rendered;
 }
 
