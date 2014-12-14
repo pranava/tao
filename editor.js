@@ -178,6 +178,7 @@
     this.currentEdge = null;
   }
 
+  //for updating the pane when you change the edge type
   EdgePanel.prototype.decidePane = function(panel) {
     return(function() {
       if (panel.edgeTypePanel.val() == "Scheduling") {
