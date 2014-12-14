@@ -33,14 +33,17 @@
 
       var params = [];
       var arr = $('.variables');
+
       arr.each(function() {
         params.push(eval('(' + $(this).find('.initialVal').val() + ')'));
       });
 
-      params.unshift(0);
+      var toRun = function(p){
+        var s = function() { Simulation.apply(this, p) };
+        s.prototype = this.prototype;
+        return new s();
+      }(params);
 
-
-      var toRun = new(Simulation.bind.apply(Simulation, params))();
       var eng = new Engine(lifoRank);
       eng.execute(toRun, parseInt($('#timeUnits').val()));
     });
@@ -99,20 +102,25 @@
             //put in a time so that a poor user won't have to encounter infinite loops
             $('#timeUnits').val('0');
 
-            //get the user instructions for the simulation and alert it
+            //get the user instructions for the simulation
             $('#simulationDescription').val(json.description);
 
             //load variables
             for (var variable in json.variables) {
+              var currentVar = json.variables[variable];
               var container = $('<li></li>').addClass('variables');
-              var nameSpan = $('<span></span>').addClass('code').addClass('variableName').text(json.variables[variable].name);
+
+              var nameSpan = $('<span></span>').addClass('code').addClass('variableName').text(currentVar.name);
               var deleteAnchor = $('<a></a>').addClass('right').attr('href', '#').text('✕');
               var initialValue = $('<input></input>').attr('placeholder', 'Initial Value').addClass('initialVal');
+              var description = $('<input></input>').attr('placeholder', 'Description').addClass('paramDescription').val(currentVar.description);
 
-              container.append(nameSpan).append(deleteAnchor).append(initialValue);
-              deleteAnchor.on('click', function() {
-                container.remove();
-              });
+              container.append(nameSpan).append(deleteAnchor).append(initialValue).append(description);
+              deleteAnchor.on('click', (function(c) { 
+                return (function() {
+                  c.remove();
+                })
+              })(container));
 
               globalPanel.globalVariablesUl.append(container);
             }
@@ -132,7 +140,8 @@
             //load edges
             for (edge in json.edges) {
               var e = json.edges[edge];
-              erg.createEdgeByName(e.source, e.target, e.delay, e.condition, e.priority, e.parameters);
+              var edgeType = e.edgeType || "Scheduling";
+              erg.createEdgeByName(e.source, e.target, e.delay, e.condition, e.priority, e.parameters, edgeType);
             }
 
           }
@@ -165,6 +174,8 @@
     eventPanel.load(node);
     contents.show();
   }
+
+
 
   initialize();
 

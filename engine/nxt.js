@@ -1,5 +1,5 @@
-function Event(name, parent, id, count, timestamp, priority, func, params, trace) {
-  this.parent = parent;
+function Event(name, parentEvent, id, count, timestamp, priority, func, params, trace) {
+  this.parentEvent = parentEvent;
   this.name = name;
   this._id = id;
   this.count = count;
@@ -8,6 +8,20 @@ function Event(name, parent, id, count, timestamp, priority, func, params, trace
   this.func = func;
   this.params = params;
   this.trace = trace;
+}
+
+function pendingEvent(name, parentEvent, id, count, timestamp, priority, func, params, trace, condition, condFunc) {
+  this.name = name;
+  this.parentEvent = parentEvent;
+  this._id = id;
+  this.count = count;
+  this.timestamp = timestamp;
+  this.priority = priority;
+  this.func = func;
+  this.params = params;
+  this.trace = trace;
+  this.condition = condition;
+  this.condFunc = condFunc;
 }
 
 function lifoRank(e1, e2) {
@@ -28,84 +42,111 @@ function lifoRank(e1, e2) {
 
 
 function Scheduler(eventRanker) {
-  var self = this;
-  var _clock = 0;
-  var _count = 0;
-  var _terminate = false;
+  this.clock = 0;
+  this.count = 0;
+  this.terminate = false;
 
-  var _uniqueID = {};
+  this.uniqueID = {};
 
-  var _pendingEvents = new Heap(eventRanker);
+  this.scheduledEvents = new Heap(eventRanker);
+  this.pendingEvents = [];
 
-  self.getClock = function() {
-    return _clock;
+}
+
+Scheduler.prototype.getClock = function() {
+  return this.clock;
+}
+
+Scheduler.prototype.getCount = function() {
+  return this.count;
+}
+
+Scheduler.prototype.terminate = function() {
+  this.terminate = true;
+}
+
+Scheduler.prototype.schedule = function(name, parentEvent, offset, priority, func, params, trace) {
+  if (!this.uniqueID.hasOwnProperty(name)) {
+    this.uniqueID[name] = 0;
+  } else {
+    this.uniqueID[name] += 1;
   }
 
-  self.getCount = function() {
-    return _count;
+  var futureEvent = new Event(name, parentEvent, this.uniqueID[name], this.count, this.clock + offset, priority, func, params, trace);
+  this.scheduledEvents.push(futureEvent);
+  this.count += 1;
+}
+
+Scheduler.prototype.schedulePending = function(name, parentEvent, offset, priority, func, params, trace, condition, condFunc) {
+  if (!this.uniqueID.hasOwnProperty(name)) {
+    this.uniqueID[name] = 0;
+  } else {
+    this.uniqueID[name] += 1;
   }
 
-  self.terminate = function() {
-    _terminate = true;
-  }
+  //can't make scenario the prototype because you can't update the scenario whenever a variable changes, so your pending edge checks against the initial
+  //condition every time. 
+  var futureEvent = new pendingEvent(name, parentEvent, this.uniqueID[name], this.count, this.clock + offset, priority, func, params, trace, condition, condFunc);
+  this.pendingEvents.push(futureEvent);
+  this.count += 1;
+}
 
-  self.schedule = function(name, parent, offset, priority, func, params, trace) {
-    
-    if (!_uniqueID.hasOwnProperty(name)) {
-      _uniqueID[name] = 0;
-    } else {
-      _uniqueID[name] += 1;
-    }
-
-    var futureEvent = new Event(name, parent, _uniqueID[name], _count, _clock + offset, priority, func, params, trace);
-    _pendingEvents.push(futureEvent);
-    _count += 1;
-  }
-
-  self.hasNext = function() {
-    if (!_terminate) {
-      return !_pendingEvents.empty();
-    } else {
-      return false;
-    }
-  }
-
-  self.next = function() {
-    var currentEvent = _pendingEvents.pop();
-    _clock = currentEvent.timestamp;
-
-    return currentEvent;
+Scheduler.prototype.hasNext = function() {
+  if (!this.terminate) {
+    return !this.scheduledEvents.empty();
+  } else {
+    return false;
   }
 }
 
+Scheduler.prototype.next = function() {
+  var currentEvent = this.scheduledEvents.pop();
+  this.clock = currentEvent.timestamp;
+
+  return currentEvent;
+}
+
+
 function Engine(eventRanker) {
-  var self = this;
-  self.eventRanker = eventRanker;
-  self.cont = true;
+  this.eventRanker = eventRanker;
+}
 
-  self.terminate = function() {
-    self.cont = false;
-  }
+Engine.prototype.execute = function(scenario, duration) {
+  var scheduler = new Scheduler(this.eventRanker);
 
-  self.execute = function(scenario, duration) {
-    var scheduler = new Scheduler(self.eventRanker);
+  scenario.Run(scheduler);
 
-    //changed from ._init
-    scenario.Run(scheduler);
+  while (scheduler.hasNext()) {
+    var currentEvent = scheduler.next();
 
+    if (currentEvent.timestamp > duration) break;
+    data = currentEvent.func(scheduler, currentEvent.params, false);
 
-    while (scheduler.hasNext()) {
-      var currentEvent = scheduler.next();
+    if (currentEvent.parentEvent.name == "Run") {
+      console.log(currentEvent.name + ' ' + currentEvent._id + ' by Run 0');
+    } else if (currentEvent.parentEvent && currentEvent.trace) {
+      console.log(currentEvent.name + ' ' + currentEvent._id + ' by ' + currentEvent.parentEvent.name
+       + ' ' + currentEvent.parentEvent._id + ' at time '
+      + scheduler.getClock());
+    }
 
-      if (currentEvent.timestamp > duration) break;
-      data = currentEvent.func(scheduler, currentEvent.params);
+    //pending events
+    for (var e in scheduler.pendingEvents) {
+      var event = scheduler.pendingEvents[e];
 
-      if (currentEvent.parent.name == "Run") {
-        console.log(currentEvent.name + ' ' + currentEvent._id + ' by Run 0');
-      } else if (currentEvent.parent && currentEvent.trace) {
-        console.log(currentEvent.name + ' ' + currentEvent._id + ' by ' + currentEvent.parent.name
-         + ' ' + currentEvent.parent._id + ' at time '
-        + scheduler.getClock());
+      // only global variables
+
+      if (event.condFunc(scenario)) {
+        data = event.func(scheduler, event.params, true);
+        if (event.parentEvent.name == "Run") {
+          console.log(event.name + ' ' + event._id + ' by Run 0');
+        } else if (event.parentEvent && event.trace) {
+          console.log(event.name + ' ' + event._id + ' by ' + event.parentEvent.name
+           + ' ' + event.parentEvent._id + ' at time '
+          + scheduler.getClock());
+        }
+
+        delete scheduler.pendingEvents[e];
       }
     }
   }

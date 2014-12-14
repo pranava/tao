@@ -278,6 +278,7 @@
     opts.type = 'segment';
     Particle.prototype.constructor.call(this, opts);
 
+    this.edgeType = opts.edgeType;
     this.delay = opts.delay;
     this.condition = opts.condition;
     this.priority = opts.priority;
@@ -421,7 +422,6 @@
     } else {
       segment = new LineSegment(opts);
     }
-
     return segment;
   }
 
