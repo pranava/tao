@@ -165,9 +165,13 @@ a {
 .editor .variables {
   background-color: rgb(228, 231, 232);
   padding: 5px 15px;
-  height: 90px;
+  height: 140px;
   line-height: 30px;
   margin-bottom: 2px;
+}
+
+.editor .paramDescription {
+  margin-top: 12px;
 }
 
 .editor ul li {
