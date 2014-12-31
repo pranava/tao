@@ -186,6 +186,29 @@
       }
     });
 
+    Handlebars.registerHelper('tracedEvents', function(events, options) {
+      var eventsTraced = "";
+      var allEvents = 0;
+      for (var i = 0; i < events.length; i++) {
+        if (events[i].trace == "true") {
+          allEvents += 1;
+          eventsTraced += events[i].name.toUpperCase() + ',';
+        }
+      }
+
+      eventsTraced = eventsTraced.substr(0, eventsTraced.length - 1);
+
+      if (allEvents == events.length) {
+        return options.fn({
+          'trace': "ALL EVENTS TRACED"
+        });
+      } else {
+        return options.fn({
+          'trace': eventsTraced
+        })
+      }
+    });
+
     Handlebars.registerHelper('initialValues', function(options) {
       //can only generate sigma file if variables are all ints.
       var toReturn = "";

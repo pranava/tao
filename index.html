@@ -33,7 +33,7 @@
             <span class="title">NAME</span>
             <input type="text" data-templateId="eventName"/>
             <br /><br />
-            <span class="title">Trace</span>
+            <span class="title">TRACE</span>
             <span style="display: inline-block" class="instructions">To trace an event, check the box:</span>
             <input style="display: inline-block" type="checkbox" data-templateId="traceEvent" id="traceEvent"checked>
             <br /><br />
@@ -56,16 +56,29 @@
             <input type="text" disabled data-templateId="targetName" value="Enter"/>
             <br /><br />
 
-            <span class="title" style="display: none;" id="edgeListDisplay">Edges</span>
+            <span class="title">EDGE TYPE</span>
+            <select id="edgeType">
+              <option value="Scheduling">Scheduling Edge</option>
+              <option value="Pending">Pending Edge</option>
+              <option value="Cancelling">Cancelling Edge</option>
+            </select>
+            <br /><br />
+
+
+            <span class="title" style="display: none;" id="edgeListDisplay">EDGES</span>
+            <span class="instructions" style="display: none;" id="edgeListDisplayInstructions">There are multiple edges from the given source to the given target. Click on an edge to load it.</span>
             <ul data-templateId="multipleEdgeSelector" id="multipleEdgeList"></ul>
             <br />
 
             <span class="title">CONDITION</span>
+            <span class="instructions" style="display: none;" id="pendingEdgeCondition">A pending edge can only contain conditions involving global variables. Do not use variables from the params object or private variables to define a condition for a pending edge.</span>
             <div class="code-editor" style="height: 50px;" data-templateId="condition">(true)</div>
             <br /><br />
 
-            <span class="title">DELAY</span>
+
+            <span class="title" id="edgeDelay">DELAY</span>
             <input type="text" data-templateId="delay"/>
+            <span class="instructions" style="display: none;" id="edgeDelayText">You cannot set a delay for a pending edge.</span>
             <br /><br />
 
             <span class="title">PRIORITY</span>
@@ -140,17 +153,23 @@ function {{name}} (
  
 
   {{#each events}}
-  self.{{name}} = function(scheduler, params) {
+  self.{{name}} = function(scheduler, params, scheduledByPending) {
     this.name = "{{name}}";
 
     {{{stateChange}}}
-    {{#getEdges ../edges name}}
+    {{#getSchedulingEdges ../edges name}}
     if ({{{condition}}}) {
       scheduler.schedule("{{#getEvent ../../events target}}{{name}}{{/getEvent}}", this, {{delay}}, {{priority}}, self.{{#getEvent ../../events target}}{{name}}{{/getEvent}}, {{#parameters parameters}}{{{params}}}{{/parameters}}, {{#getEvent ../../events target}}{{trace}}{{/getEvent}});
     }
-    {{/getEdges}}
+    {{/getSchedulingEdges}}
+
+    {{#getPendingEdges ../edges name}}
+    scheduler.schedulePending("{{#getEvent ../../events target}}{{name}}{{/getEvent}}", this, {{delay}}, {{priority}}, self.{{#getEvent ../../events target}}{{name}}{{/getEvent}}, {{#parameters parameters}}{{{params}}}{{/parameters}}, {{#getEvent ../../events target}}{{trace}}{{/getEvent}}, "{{{condition}}}", function(globals) { return {{{condition}}}; });
+    {{/getPendingEdges}}
+
     return this.name;
   }
+
   {{/each}}
 }
     </script>
@@ -170,7 +189,7 @@ Random Number Seed: 12345
 Initial Values:     {{#initialValues}}{{initialVals}}{{/initialValues}}
 Ending Condition:   STOP_ON_TIME
 Ending Time:        {{#time}}{{timeUnits}}{{/time}}
-Trace Events:       ALL EVENTS TRACED
+Trace Events:       {{#tracedEvents events}}{{trace}}{{/tracedEvents}}
 Hide Edges:
 
 

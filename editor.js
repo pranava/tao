@@ -67,15 +67,18 @@
 
     for (var key in this.currentNode.parameters) {
       if (this.currentNode.parameters.hasOwnProperty(key)) {
-        // this.currentEdge.destination.parameters[key]
+
         var container = $('<li></li>');
         var nameSpan = $('<span></span>').addClass('code').addClass('variableName').text(key);
         var deleteAnchor = $('<a></a>').addClass('right').attr('href', '#').text('✕');
 
         container.append(nameSpan).append(deleteAnchor);
-        deleteAnchor.on('click', function() {
-          container.remove();
-        });
+        deleteAnchor.on('click', (function(c) { 
+          return (function() {
+            c.remove();
+          })
+        })(container));
+
         this.parametersUl.append(container);
       }
     }
@@ -168,8 +171,27 @@
     this.codeEditor.setTheme("ace/theme/tomorrow");
     this.codeEditor.getSession().setMode("ace/mode/javascript");
 
+    this.edgeTypePanel = $('#edgeType');
+    this.edgeTypePanel.on('change', this.decidePane(this));
+
     this.erg = null;
     this.currentEdge = null;
+  }
+
+  //for updating the pane when you change the edge type
+  EdgePanel.prototype.decidePane = function(panel) {
+    return(function() {
+      if (panel.edgeTypePanel.val() == "Scheduling") {
+        panel.delay.show();
+        $('#edgeDelay').show();
+        $('#edgeDelayText').hide();
+        $('#pendingEdgeCondition').hide();
+      } else if (panel.edgeTypePanel.val() == "Pending") {
+        panel.delay.hide();
+        $('#edgeDelayText').show();
+        $('#pendingEdgeCondition').show();
+      }
+    });
   }
 
   EdgePanel.prototype.queryByTemplateId = function(templateId) {
@@ -204,7 +226,7 @@
       .append(updateAction);
     return container;
   }
-  
+
   EdgePanel.prototype.delete = function(panel) {
     return (
       function() {
@@ -217,13 +239,14 @@
     this.clear();
     this.footerDiv.append(this.buildActions());
     this.erg = erg;
-    // this.currentEdge = edges;
     if (edges.length < 2) {
       $('.multiple-edge-action').hide();
       $('#edgeListDisplay').hide();
+      $('#edgeListDisplayInstructions').hide();
       this.load(edges[0]);
     } else {
       $('#edgeListDisplay').show();
+      $('#edgeListDisplayInstructions').show();
       this.load(edges[0]);
       var i = 0;
       for (var edge in edges) {
@@ -233,32 +256,46 @@
           .attr('href', '#')
           .addClass('action-button')
           .addClass('green')
-          .text('Edge ' + i);
-        container.append(nameSpan);
+          .text('Edge ' + i)
+          .css('font-size', '14px');
+        var currentAnchor = $('<a></a>')
+          .attr('href', '#')
+          .addClass('right')
+          .text('←')
+          .hide();
+        if (i == 1) {
+          currentAnchor.show();
+        }
+        container.append(nameSpan).append(currentAnchor);
         this.multipleEdgeSelectorUl.append(container);
-        nameSpan.on('click', this.returnLoad(edges[edge]));
+        nameSpan.on('click', this.returnLoadForMultipleEdges(edges[edge], this, i));
       }
     }
   }
 
-  EdgePanel.prototype.returnLoad = function(edge) {
+  EdgePanel.prototype.returnLoadForMultipleEdges = function(edge, panel, selected) {
     var self = this;
     return (function() {
       self.load(edge);
+      var li = $(panel.multipleEdgeSelectorUl.find('li'));
+      $.each(li, function() {
+        $('.right', this).hide();
+      });
+      $('.right', li[selected - 1]).show();
     });
   }
 
   EdgePanel.prototype.load = function(edge) {
-    // this.clear();
-    // this.footerDiv.append(this.buildActions());
-
     this.sourceNameInput.val(edge.origin.title);
     this.targetNameInput.val(edge.destination.title);
     this.delay.val(edge.delay);
     this.priority.val(edge.priority);
     this.codeEditor.getSession().setValue(edge.condition);
+    this.edgeTypePanel.val(edge.edgeType);
     this.currentEdge = edge;
+    this.erg.clearContext();
     this.erg.selectedPartical = edge;
+    this.erg.selectedPartical.setTheme(Segment.themes.red);
 
     this.parametersUl.empty();
 
@@ -267,23 +304,29 @@
       if (this.currentEdge.destination.parameters.hasOwnProperty(key)) {
         var container = $('<li></li>').addClass('edgeParams');
         var nameSpan = $('<span></span>').addClass('code').addClass('variableName').text(key);
-        var deleteAnchor = $('<a></a>').addClass('right').attr('href', '#').text('✕');
         var parameterValue = $('<input></input>').attr('placeholder', 'Parameter Value').addClass('parameterVal');
         if (this.currentEdge.parameters[key]) {
           parameterValue.attr('value', this.currentEdge.parameters[key]);
         } else {
           parameterValue.attr('value', '');
         }
-        container.append(nameSpan).append(deleteAnchor).append(parameterValue);
-        deleteAnchor.on('click', function() {
-          container.remove();
-        });
+        container.append(nameSpan).append(parameterValue);
+
         this.parametersUl.append(container);
       }
     }
 
-
     this.editor.show();
+    if (edge.edgeType == 'Pending') {
+      this.delay.hide();
+      $('#edgeDelayText').show();
+      $('#pendingEdgeCondition').show();
+    } else {
+      this.delay.show();
+      $('#edgeDelay').show();
+      $('#edgeDelayText').hide();
+      $('#pendingEdgeCondition').hide();
+    }
   }
 
   EdgePanel.prototype.clear = function() {
@@ -304,6 +347,7 @@
       var newDelay = panel.delay.val();
       var newPriority = panel.priority.val();
       var newCondition = panel.codeEditor.getSession().getValue();
+      var newEdgeType = panel.edgeTypePanel.val();
       var newParameters = {};
 
       var paramEl = $('li', panel.parametersUl);
@@ -318,7 +362,7 @@
       panel.currentEdge.delay = newDelay;
       panel.currentEdge.priority = newPriority;
       panel.currentEdge.condition = newCondition;
-
+      panel.currentEdge.edgeType = newEdgeType;
       panel.currentEdge.parameters = newParameters;
     });
   }
@@ -366,8 +410,9 @@
     var deleteAnchor = $('<a></a>').addClass('right').attr('href', '#').text('✕');
 
     var initialValue = $('<input></input>').attr('placeholder', 'Initial Value').addClass('initialVal');
+    var description = $('<input></input>').attr('placeholder', 'Description').addClass('paramDescription');
 
-    container.append(nameSpan).append(deleteAnchor).append(initialValue);
+    container.append(nameSpan).append(deleteAnchor).append(initialValue).append(description);
     deleteAnchor.on('click', function() {
       container.remove();
     });
